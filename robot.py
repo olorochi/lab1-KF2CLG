@@ -2,6 +2,7 @@ class Robot:
     def __init__(self, gauche, droit, vitesse):
         self.__gauche = gauche
         self.__droit = droit
+        self.set_vitesse(vitesse)
 
     def gauche(self):
         self.__gauche.arret()
