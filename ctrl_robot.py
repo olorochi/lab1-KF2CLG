@@ -66,7 +66,7 @@ def creer_robot():
         from gpiozero import DigitalOutputDevice, PWMOutputDevice
     except ImportError as erreur:
         raise SystemExit(
-            "gpiozero est requis sur le Raspberry Pi: "
+            "gpiozero est requis: "
         ) from erreur
 
     moteur_gauche = Moteur(

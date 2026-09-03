@@ -1,6 +1,12 @@
 """Modele du robot mobile."""
 
-from param import VITESSE_MAX, VITESSE_MIN
+from param import (
+    FACTEUR_MOTEUR_DROIT_PIVOT_D,
+    FACTEUR_MOTEUR_GAUCHE_PIVOT_G,
+    VITESSE_MAX,
+    VITESSE_MIN,
+    VITESSE_ROTATION_MIN,
+)
 
 
 class Robot:
@@ -24,14 +30,26 @@ class Robot:
         self._moteur_droit.reculer(puissance)
 
     def pivoter_gauche(self, vitesse):
-        puissance = self.limiter_vitesse(vitesse)
-        self._moteur_gauche.reculer(puissance)
+        puissance = max(
+            VITESSE_ROTATION_MIN,
+            self.limiter_vitesse(vitesse),
+        )
+        puissance_gauche = self.limiter_vitesse(
+            puissance * FACTEUR_MOTEUR_GAUCHE_PIVOT_G
+        )
+        self._moteur_gauche.reculer(puissance_gauche)
         self._moteur_droit.avancer(puissance)
 
     def pivoter_droite(self, vitesse):
-        puissance = self.limiter_vitesse(vitesse)
+        puissance = max(
+            VITESSE_ROTATION_MIN,
+            self.limiter_vitesse(vitesse),
+        )
+        puissance_droite = self.limiter_vitesse(
+            puissance * FACTEUR_MOTEUR_DROIT_PIVOT_D
+        )
         self._moteur_gauche.avancer(puissance)
-        self._moteur_droit.reculer(puissance)
+        self._moteur_droit.reculer(puissance_droite)
 
     def arreter(self):
         self._moteur_gauche.arreter()

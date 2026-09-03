@@ -18,6 +18,15 @@ from param import (
 )
 
 NOM_FENETRE = "Controle robot - clavier actif"
+LARGEUR_FENETRE = 560
+HAUTEUR_FENETRE = 430
+
+NOMS_COMMANDES = {
+    MSG_AVANCER: "AVANCE",
+    MSG_RECULER: "RECULE",
+    MSG_PIVOTER_G: "PIVOTE A GAUCHE",
+    MSG_PIVOTER_D: "PIVOTE A DROITE",
+}
 
 
 class TelCmd:
@@ -58,6 +67,12 @@ class TelCmd:
             self.envoyer_mouvement(self.derniere_commande)
 
     def traiter_touche(self, touche):
+        if touche == -1:
+            return False
+
+        if ord("A") <= touche <= ord("Z"):
+            touche = ord(chr(touche).lower())
+
         commande = self.COMMANDES_MOUVEMENT.get(touche)
         if commande is not None:
             self.envoyer_mouvement(commande)
@@ -74,15 +89,79 @@ class TelCmd:
             print("Commande invalide")
         return True
 
-    def executer(self, lire_touche):
+    def executer(self, lire_touche, actualiser_affichage=None):
         try:
             actif = True
             while actif:
                 actif = self.traiter_touche(lire_touche())
+                if actif and actualiser_affichage is not None:
+                    actualiser_affichage()
         except KeyboardInterrupt:
             pass
         finally:
             self.arreter()
+
+
+def afficher_commandes(telecommande, cv2, np):
+    image = np.full(
+        (HAUTEUR_FENETRE, LARGEUR_FENETRE, 3),
+        (32, 32, 32),
+        dtype=np.uint8,
+    )
+
+    couleur_titre = (80, 210, 255)
+    couleur_texte = (235, 235, 235)
+    couleur_etat = (100, 230, 120)
+    police = cv2.FONT_HERSHEY_SIMPLEX
+
+    cv2.putText(
+        image,
+        "CONTROLE DU ROBOT",
+        (125, 42),
+        police,
+        0.8,
+        couleur_titre,
+        2,
+        cv2.LINE_AA,
+    )
+
+    commandes = (
+        "W : Avancer",
+        "S : Reculer",
+        "Q : Pivoter a gauche",
+        "E : Pivoter a droite",
+        "ESPACE : Arreter",
+        ". : Augmenter la vitesse",
+        ", : Diminuer la vitesse",
+        "X : Arreter et quitter",
+    )
+
+    for index, texte in enumerate(commandes):
+        cv2.putText(
+            image,
+            texte,
+            (55, 85 + index * 34),
+            police,
+            0.58,
+            couleur_texte,
+            1,
+            cv2.LINE_AA,
+        )
+
+    etat = NOMS_COMMANDES.get(telecommande.derniere_commande, "ARRETE")
+    cv2.rectangle(image, (35, 365), (525, 415), (65, 65, 65), -1)
+    cv2.putText(
+        image,
+        f"Etat: {etat}   Vitesse: {telecommande.vitesse:.2f} m/s",
+        (50, 397),
+        police,
+        0.58,
+        couleur_etat,
+        1,
+        cv2.LINE_AA,
+    )
+
+    cv2.imshow(NOM_FENETRE, image)
 
 
 def main():
@@ -97,12 +176,14 @@ def main():
         ) from erreur
 
     telecommande = TelCmd(ip_robot)
-    image_vide = np.zeros((1, 1, 3), dtype=np.uint8)
-    cv2.imshow(NOM_FENETRE, image_vide)
+    afficher_commandes(telecommande, cv2, np)
     print(f"Telecommande connecter a {ip_robot}:{APP_CTRL_ROBOT}.")
 
     try:
-        telecommande.executer(lambda: cv2.waitKeyEx(0))
+        telecommande.executer(
+            lambda: cv2.waitKeyEx(0),
+            lambda: afficher_commandes(telecommande, cv2, np),
+        )
     finally:
         cv2.destroyAllWindows()
         fermer_client()
